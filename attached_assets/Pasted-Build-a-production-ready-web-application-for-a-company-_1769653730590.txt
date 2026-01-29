@@ -1,0 +1,140 @@
+Build a production-ready web application for a company that provides solar engineering, permitting, and solar panel removal & reinstallation (R&R) services.
+
+This is an internal B2B platform used by solar installers, roofing contractors, internal operations staff, and engineers.
+
+The system manages projects and jobs end-to-end after a customer submits work through the platform.
+
+CORE CONCEPTS
+
+1. Companies & Users
+- Users belong to a company.
+- Companies can be:
+  - Solar installers
+  - Roofing contractors
+  - Internal operations
+  - Engineers (optional role)
+- Each user has a role:
+  - Installer
+  - Roofer
+  - Internal Ops
+  - Engineer
+- Access control rules:
+  - Installers and roofers only see their own company’s projects and jobs.
+  - Internal ops can see and manage everything.
+  - Engineers only see jobs assigned to them.
+
+2. Projects
+- A Project represents a real-world solar or roofing project at a given address.
+- Project fields include:
+  - Customer name
+  - Address (street, city, state, postal code)
+  - Utility (optional)
+  - Basic metadata
+- A Project can contain multiple Jobs over time.
+
+3. Jobs
+- Jobs represent specific work requests under a project.
+- Two job types:
+  - Engineering Job (survey + design + engineer letter / permit pack)
+  - R&R Job (solar panel removal & reinstallation)
+- Each job has:
+  - A status lifecycle (e.g. new → submitted → assigned → in progress → needs revision → completed)
+  - Assigned internal ops (optional)
+  - Assigned engineer (for engineering jobs)
+  - Messages, files, and audit history
+
+FUNCTIONAL REQUIREMENTS
+
+4. Authentication & Authorization
+- Users can sign in securely.
+- Access is scoped by company and role.
+- Internal ops can manage assignments and status changes.
+
+5. Job Listing & Detail Views
+- Users can:
+  - List jobs they have access to
+  - Filter by job type, status, and date
+  - Open a detailed job view
+- Internal ops have a dashboard showing all jobs with filters and assignments.
+
+6. Engineering Jobs – Site Survey & Data
+- Engineering jobs must support:
+  - A detailed survey form (roof type, structure, layout, electrical/structural info, notes)
+  - File uploads (photos, existing plans, utility forms)
+- Survey data and files can be edited until submission.
+- Installers submit the job when ready.
+
+7. Engineering Workflow
+- After submission:
+  - Internal ops can view and assign the job to an engineer.
+- Engineers can:
+  - View assigned jobs
+  - Review survey data and files
+  - Upload outputs (design files, engineer letters, permit packages)
+  - Mark jobs as completed
+- Revisions:
+  - Installers can request revisions with comments
+  - Track revision count per job (up to 2 free revisions)
+  - Engineers or ops can upload revised outputs and re-complete the job
+
+8. R&R Jobs – Roofer Workflow
+- Roofers can create R&R jobs with:
+  - Existing system information (if known)
+  - Roof details
+  - Desired work window
+- R&R jobs support:
+  - “Before removal” photo set
+  - “After removal” photo set
+  - “After reinstallation” photo set
+  - Simple testing results (pass/fail, notes)
+  - Optional commissioning report upload
+
+9. Warranties (R&R Jobs)
+- For completed R&R jobs:
+  - Internal ops can create a warranty record
+  - Warranty fields: issue date, term, notes
+  - Optional warranty PDF upload
+- Roofers can view warranty details for their jobs.
+
+10. Upgrades, Batteries & Commissions (R&R)
+- Internal ops can record upgrade or battery items sold on an R&R job:
+  - Description
+  - Amount
+  - Commissionable flag
+- Roofers have a summary view showing:
+  - Their R&R jobs
+  - Commissionable items
+  - Total commissionable amounts
+- No payout logic is required.
+
+11. Communication
+- Each job has a message thread.
+- Installers/roofers, internal ops, and engineers (if assigned) can post messages.
+- Messages show author, role, and timestamp.
+- Messages can optionally be marked as revision requests.
+
+12. Status Tracking & Portal Behavior
+- Installers and roofers can:
+  - View all their jobs with current status and last update time
+  - Drill into jobs to see all related data, files, outputs, messages, revisions, warranties, and commissions
+- Internal ops can:
+  - View all jobs
+  - Change statuses
+  - Assign engineers
+  - Monitor progress
+
+13. Audit Trail
+For each job, record:
+- Status changes (old status, new status, who changed it, when)
+- Assignments (who assigned, to whom, when)
+- File uploads (who uploaded, what, when)
+- Warranty creation (who, when)
+- Upgrade/battery item creation (who, when)
+
+GENERAL
+- Clean, professional UI suitable for an operations-heavy B2B platform.
+- Persistent storage.
+- Secure authentication.
+- Single web application suitable for running on Replit in production.
+- No public API; all functionality is accessed through the web app.
+- Include a README explaining how to run and extend the system.
