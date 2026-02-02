@@ -64,6 +64,17 @@ export function useCreateProfile() {
   });
 }
 
+export function useEngineers() {
+  return useQuery({
+    queryKey: ["/api/users/engineers"],
+    queryFn: async () => {
+      const res = await fetch("/api/users/engineers", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch engineers");
+      return res.json() as Promise<{ id: string; firstName: string | null; lastName: string | null }[]>;
+    },
+  });
+}
+
 // --- Projects ---
 export function useProjects(companyId?: string) {
   return useQuery({

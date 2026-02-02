@@ -44,6 +44,23 @@ export async function registerRoutes(
     res.json(profile || null);
   });
 
+  app.get("/api/users/engineers", isAuthenticated, async (req: any, res) => {
+    // Only Ops can list all engineers
+    const profile = await storage.getProfile(req.user.claims.sub);
+    if (profile?.role !== "ops") return res.status(403).json({ message: "Forbidden" });
+
+    const results = await db.select({
+      id: users.id,
+      firstName: users.firstName,
+      lastName: users.lastName
+    })
+    .from(users)
+    .innerJoin(profiles, eq(users.id, profiles.userId))
+    .where(eq(profiles.role, "engineer"));
+
+    res.json(results);
+  });
+
   app.post(api.profiles.create.path, isAuthenticated, async (req: any, res) => {
     try {
       const input = api.profiles.create.input.parse(req.body);
