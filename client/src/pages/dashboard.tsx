@@ -107,7 +107,7 @@ function StatsOverview({ role }: { role: string }) {
   );
 }
 
-function RecentJobs({ role }: { role: string }) {
+function RecentJobs({ role, profile }: { role: string, profile: any }) {
   const { user } = useAuth();
   const { data: jobs, isLoading } = useJobs();
 
