@@ -34,7 +34,7 @@ export default function Dashboard() {
       <StatsOverview role={profile.role} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <RecentJobs role={profile.role} />
+        <RecentJobs role={profile.role} profile={profile} />
         <ActivityChart />
       </div>
     </div>
@@ -51,7 +51,7 @@ function StatsOverview({ role }: { role: string }) {
 
   const filteredJobs = role === "ops" ? jobs : jobs.filter(j => 
     j.assignedEngineerId === user?.id || 
-    j.project.companyId === (user as any)?.companyId
+    j.project.companyId === profile.companyId
   );
 
   const active = filteredJobs.filter(j => ['in_progress', 'assigned'].includes(j.status)).length;
@@ -115,7 +115,7 @@ function RecentJobs({ role }: { role: string }) {
 
   const filteredJobs = role === "ops" ? (jobs || []) : (jobs || []).filter(j => 
     j.assignedEngineerId === user?.id || 
-    j.project.companyId === (user as any)?.companyId
+    j.project.companyId === profile?.companyId
   );
 
   const recentJobs = filteredJobs.slice(0, 5);

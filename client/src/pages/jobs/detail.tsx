@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Send, MapPin, Calendar, User, FileText, CheckCircle, UserPlus, Clock, Activity } from "lucide-react";
+import { Loader2, Send, MapPin, Calendar, User, FileText, CheckCircle, UserPlus, Clock, Activity, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -47,9 +47,16 @@ export default function JobDetail() {
             <span className="text-sm text-muted-foreground uppercase font-bold tracking-wider">{job.type} Job</span>
           </div>
           <h1 className="text-3xl font-display font-bold">{job.project.customerName}</h1>
-          <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            {job.project.address}, {job.project.city}
+          <div className="flex flex-col gap-1 mt-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              {job.project.address}, {job.project.city}
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Building2 className="h-4 w-4 text-primary" />
+              <span className="font-semibold">{job.project.company.name}</span>
+              <span className="text-muted-foreground">(Project Owner)</span>
+            </div>
           </div>
         </div>
 
