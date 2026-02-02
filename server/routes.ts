@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { db } from "./db";
+import { users, profiles } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -194,7 +197,31 @@ export async function registerRoutes(
   app.get(api.jobs.get.path, isAuthenticated, async (req, res) => {
     const job = await storage.getJob(Number(req.params.id));
     if (!job) return res.status(404).json({ message: "Job not found" });
-    res.json(job);
+    
+    // Fetch assigned engineer profile if exists
+    let assignedEngineer = null;
+    if (job.assignedEngineerId) {
+      const engUser = await storage.getUser(job.assignedEngineerId);
+      if (engUser) {
+        assignedEngineer = {
+          id: engUser.id,
+          firstName: engUser.firstName,
+          lastName: engUser.lastName
+        };
+      }
+    }
+
+    // Fetch company details for the project
+    const company = await storage.getCompany(job.project.companyId);
+
+    res.json({
+      ...job,
+      assignedEngineer,
+      project: {
+        ...job.project,
+        company: company || { name: "Unknown" }
+      }
+    });
   });
 
   app.put(api.jobs.update.path, isAuthenticated, async (req: any, res) => {

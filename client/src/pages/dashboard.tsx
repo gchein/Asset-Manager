@@ -31,7 +31,7 @@ export default function Dashboard() {
         )}
       />
 
-      <StatsOverview role={profile.role} />
+      <StatsOverview role={profile.role} profile={profile} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <RecentJobs role={profile.role} profile={profile} />
@@ -41,7 +41,7 @@ export default function Dashboard() {
   );
 }
 
-function StatsOverview({ role }: { role: string }) {
+function StatsOverview({ role, profile }: { role: string, profile: any }) {
   const { user } = useAuth();
   const { data: jobs } = useJobs();
   

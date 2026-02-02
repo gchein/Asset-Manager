@@ -54,7 +54,7 @@ export default function JobDetail() {
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Building2 className="h-4 w-4 text-primary" />
-              <span className="font-semibold">{job.project.company.name}</span>
+              <span className="font-semibold">{(job.project as any).company?.name || "Loading..."}</span>
               <span className="text-muted-foreground">(Project Owner)</span>
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function JobDetail() {
                           <User className="h-4 w-4 text-blue-600" />
                         </div>
                         <span className="font-medium">
-                          {job.assignedEngineer ? `${job.assignedEngineer.firstName} ${job.assignedEngineer.lastName}` : "Unassigned"}
+                          {(job as any).assignedEngineer ? `${(job as any).assignedEngineer.firstName} ${(job as any).assignedEngineer.lastName}` : "Unassigned"}
                         </span>
                       </div>
                     ) : (

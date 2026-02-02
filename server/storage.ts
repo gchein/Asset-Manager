@@ -1,6 +1,6 @@
 import { 
   users, companies, profiles, projects, jobs, messages, jobHistory, warranties, commissionItems,
-  type User, type InsertUser, type Company, type InsertCompany, type Profile, type InsertProfile,
+  type User, type Company, type InsertCompany, type Profile, type InsertProfile,
   type Project, type InsertProject, type Job, type InsertJob, type Message, type InsertMessage,
   type JobHistory, type Warranty, type InsertWarranty, type CommissionItem, type InsertCommissionItem,
   type ProjectWithJobs
@@ -150,7 +150,6 @@ export class DatabaseStorage implements IStorage {
     
     if (filters?.assignedToId) {
        finalResults = finalResults.filter(j => 
-         j.assignedOpsId === filters.assignedToId || 
          j.assignedEngineerId === filters.assignedToId
        );
     }
