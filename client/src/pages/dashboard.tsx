@@ -19,7 +19,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <PageHeader 
-        title={`Welcome back, ${user?.firstName}`} 
+        title={user?.firstName ? `Welcome back, ${user.firstName}` : "Welcome back"} 
         description={`Here's what's happening with your ${profile.role === "ops" ? "operations" : "tasks"} today.`}
         action={profile.role === "ops" && (
           <Link href="/projects">

@@ -13,9 +13,11 @@ import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
 import ProjectsList from "@/pages/projects/index";
+import ProjectDetail from "@/pages/projects/detail";
 import JobDetail from "@/pages/jobs/detail";
 import CompaniesList from "@/pages/companies";
 import AllJobs from "@/pages/jobs/index";
+import MyJobs from "@/pages/jobs/my-jobs";
 import Messages from "@/pages/messages";
 import NotFound from "@/pages/not-found";
 
@@ -68,11 +70,17 @@ function Router() {
       <Route path="/projects">
         <ProtectedRoute component={ProjectsList} />
       </Route>
+      <Route path="/projects/:id">
+        <ProtectedRoute component={ProjectDetail} />
+      </Route>
       <Route path="/companies">
         <ProtectedRoute component={CompaniesList} />
       </Route>
       <Route path="/jobs">
         <ProtectedRoute component={AllJobs} />
+      </Route>
+      <Route path="/my-jobs">
+        <ProtectedRoute component={MyJobs} />
       </Route>
       <Route path="/messages">
         <ProtectedRoute component={Messages} />
