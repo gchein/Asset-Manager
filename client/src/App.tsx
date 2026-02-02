@@ -14,6 +14,9 @@ import Login from "@/pages/login";
 import Onboarding from "@/pages/onboarding";
 import ProjectsList from "@/pages/projects/index";
 import JobDetail from "@/pages/jobs/detail";
+import CompaniesList from "@/pages/companies";
+import AllJobs from "@/pages/jobs/index";
+import Messages from "@/pages/messages";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
@@ -64,6 +67,15 @@ function Router() {
       </Route>
       <Route path="/projects">
         <ProtectedRoute component={ProjectsList} />
+      </Route>
+      <Route path="/companies">
+        <ProtectedRoute component={CompaniesList} />
+      </Route>
+      <Route path="/jobs">
+        <ProtectedRoute component={AllJobs} />
+      </Route>
+      <Route path="/messages">
+        <ProtectedRoute component={Messages} />
       </Route>
       <Route path="/jobs/:id">
         <ProtectedRoute component={JobDetail} />

@@ -25,7 +25,7 @@ export function Sidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/", show: true },
     { icon: Building2, label: "Companies", href: "/companies", show: isOps },
-    { icon: Briefcase, label: "Projects", href: "/projects", show: isOps || isEngineer },
+    { icon: Briefcase, label: "Projects", href: "/projects", show: true },
     { icon: HardHat, label: "All Jobs", href: "/jobs", show: isOps },
     { icon: FileText, label: "My Jobs", href: "/my-jobs", show: !isOps },
     { icon: MessageSquare, label: "Messages", href: "/messages", show: true },

@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Loader2, Plus, MapPin, Building, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProjectsList() {
   const { data: projects, isLoading } = useProjects();
