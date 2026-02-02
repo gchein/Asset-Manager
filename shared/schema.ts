@@ -54,13 +54,10 @@ export const jobs = pgTable("jobs", {
   status: jobStatusEnum("status").default("new").notNull(),
   
   // Assignments
-  assignedOpsId: text("assigned_ops_id").references(() => users.id),
   assignedEngineerId: text("assigned_engineer_id").references(() => users.id),
 
   // Flexible data storage for survey forms, specific job details
   details: jsonb("details").$type<Record<string, any>>().default({}), 
-  
-  // R&R specific fields can be in details or separate if strictly queried, keeping simple for now
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -132,10 +129,6 @@ export const jobsRelations = relations(jobs, ({ one, many }) => ({
     fields: [jobs.projectId],
     references: [projects.id],
   }),
-  assignedOps: one(users, {
-    fields: [jobs.assignedOpsId],
-    references: [users.id],
-  }),
   assignedEngineer: one(users, {
     fields: [jobs.assignedEngineerId],
     references: [users.id],
@@ -188,6 +181,5 @@ export type InsertCommissionItem = z.infer<typeof insertCommissionItemSchema>;
 export type ProjectWithJobs = Project & { jobs: Job[] };
 export type JobWithDetails = Job & { 
   project: Project; 
-  assignedOps?: { id: string, firstName: string | null, lastName: string | null };
   assignedEngineer?: { id: string, firstName: string | null, lastName: string | null };
 };

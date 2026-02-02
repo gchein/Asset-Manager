@@ -42,15 +42,21 @@ export default function Dashboard() {
 }
 
 function StatsOverview({ role }: { role: string }) {
+  const { user } = useAuth();
   const { data: jobs } = useJobs();
   
   if (!jobs) return <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     {[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
   </div>;
 
-  const total = jobs.length;
-  const active = jobs.filter(j => ['in_progress', 'assigned'].includes(j.status)).length;
-  const completed = jobs.filter(j => j.status === 'completed').length;
+  const filteredJobs = role === "ops" ? jobs : jobs.filter(j => 
+    j.assignedEngineerId === user?.id || 
+    j.project.companyId === (user as any)?.companyId
+  );
+
+  const active = filteredJobs.filter(j => ['in_progress', 'assigned'].includes(j.status)).length;
+  const completed = filteredJobs.filter(j => j.status === 'completed').length;
+  const pending = filteredJobs.filter(j => j.status === 'submitted').length;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -74,7 +80,7 @@ function StatsOverview({ role }: { role: string }) {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
               <h3 className="text-4xl font-bold font-display mt-2 text-foreground">
-                {jobs.filter(j => j.status === 'submitted').length}
+                {pending}
               </h3>
             </div>
             <div className="h-12 w-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
@@ -102,11 +108,17 @@ function StatsOverview({ role }: { role: string }) {
 }
 
 function RecentJobs({ role }: { role: string }) {
+  const { user } = useAuth();
   const { data: jobs, isLoading } = useJobs();
 
   if (isLoading) return <Skeleton className="h-[400px] rounded-2xl" />;
 
-  const recentJobs = jobs?.slice(0, 5) || [];
+  const filteredJobs = role === "ops" ? (jobs || []) : (jobs || []).filter(j => 
+    j.assignedEngineerId === user?.id || 
+    j.project.companyId === (user as any)?.companyId
+  );
+
+  const recentJobs = filteredJobs.slice(0, 5);
 
   return (
     <Card className="col-span-1 shadow-md border-border/50">

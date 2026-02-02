@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Send, MapPin, Calendar, User, FileText, CheckCircle, UserPlus } from "lucide-react";
+import { Loader2, Send, MapPin, Calendar, User, FileText, CheckCircle, UserPlus, Clock, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 export default function JobDetail() {
   const [, params] = useRoute("/jobs/:id");
@@ -97,15 +98,6 @@ export default function JobDetail() {
                     <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
                     <p className="font-medium">{job.updatedAt ? format(new Date(job.updatedAt), "PPP") : "N/A"}</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Assigned Ops</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary" />
-                      </div>
-                      <span className="font-medium">{job.assignedOps?.firstName || "Unassigned"}</span>
-                    </div>
-                  </div>
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-muted-foreground">Assigned Engineer</p>
                     {isOps && job.type === 'engineering' ? (
@@ -125,7 +117,7 @@ export default function JobDetail() {
                           ))}
                         </SelectContent>
                       </Select>
-                    ) : (
+                    ) : job.type === 'engineering' ? (
                       <div className="flex items-center gap-2 mt-1">
                         <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
                           <User className="h-4 w-4 text-blue-600" />
@@ -134,6 +126,8 @@ export default function JobDetail() {
                           {job.assignedEngineer ? `${job.assignedEngineer.firstName} ${job.assignedEngineer.lastName}` : "Unassigned"}
                         </span>
                       </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Not applicable for R&R jobs</p>
                     )}
                   </div>
                 </div>
@@ -161,27 +155,102 @@ export default function JobDetail() {
         </TabsContent>
 
         <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Technical Details</CardTitle>
-              <CardDescription>
-                {job.type === 'engineering' ? 'Engineering Requirements' : 'R&R Specifications'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-               {/* This would be a dynamic form based on job.details JSON */}
-               <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-xl">
-                 Dynamic form fields for {job.type} job details would appear here.
-                 (Roof type, Electrical Panel rating, etc.)
-               </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Workflow Status</CardTitle>
+                <CardDescription>Current progress and required actions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {job.type === 'engineering' ? (
+                    <>
+                      <WorkflowStep 
+                        title="Site Survey" 
+                        status={job.status === 'new' ? 'pending' : 'completed'} 
+                        description="Collection of on-site measurements and photos."
+                      />
+                      <WorkflowStep 
+                        title="Engineering Design" 
+                        status={['assigned', 'in_progress'].includes(job.status) ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                        description="Creation of electrical and structural plans."
+                      />
+                      <WorkflowStep 
+                        title="Permit Package" 
+                        status={job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                        description="Final documentation for city submittal."
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <WorkflowStep 
+                        title="Before Removal Photos" 
+                        status={job.status === 'new' ? 'pending' : 'completed'} 
+                      />
+                      <WorkflowStep 
+                        title="Panel Removal" 
+                        status={job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                      />
+                      <WorkflowStep 
+                        title="Roofing Work" 
+                        status={job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                      />
+                      <WorkflowStep 
+                        title="Panel Reinstallation" 
+                        status={job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                      />
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Technical Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="p-4 text-center text-xs text-muted-foreground border-2 border-dashed rounded-xl">
+                   {JSON.stringify(job.details) === '{}' ? 'No additional technical data provided.' : 'Technical specifications available in files.'}
+                 </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="messages">
           <MessagesPanel jobId={jobId} />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function WorkflowStep({ title, status, description }: { title: string, status: 'pending' | 'in_progress' | 'completed' | 'action_required', description?: string }) {
+  const icons = {
+    pending: <Clock className="h-5 w-5 text-muted-foreground" />,
+    in_progress: <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />,
+    completed: <CheckCircle className="h-5 w-5 text-green-500" />,
+    action_required: <Activity className="h-5 w-5 text-orange-500" />
+  };
+
+  const bgColors = {
+    pending: 'bg-muted/50',
+    in_progress: 'bg-blue-50 border-blue-100',
+    completed: 'bg-green-50 border-green-100',
+    action_required: 'bg-orange-50 border-orange-100'
+  };
+
+  return (
+    <div className={cn("flex items-start gap-4 p-4 rounded-xl border transition-all", bgColors[status])}>
+      <div className="mt-0.5">{icons[status]}</div>
+      <div className="flex-1">
+        <p className="font-semibold text-sm">{title}</p>
+        {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+      </div>
+      <div className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-white/50 border">
+        {status.replace('_', ' ')}
+      </div>
     </div>
   );
 }

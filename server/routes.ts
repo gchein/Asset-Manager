@@ -61,6 +61,21 @@ export async function registerRoutes(
     res.json(results);
   });
 
+  app.get("/api/users/company/:companyId", isAuthenticated, async (req: any, res) => {
+    const companyId = parseInt(req.params.companyId);
+    const results = await db.select({
+      id: users.id,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      role: profiles.role
+    })
+    .from(users)
+    .innerJoin(profiles, eq(users.id, profiles.userId))
+    .where(eq(profiles.companyId, companyId));
+
+    res.json(results);
+  });
+
   app.post(api.profiles.create.path, isAuthenticated, async (req: any, res) => {
     try {
       const input = api.profiles.create.input.parse(req.body);
