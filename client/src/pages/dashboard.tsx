@@ -1,11 +1,11 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useMyProfile, useJobs, useProjects } from "@/hooks/use-data";
+import { useCompanies, useMyProfile, useJobs, useProjects } from "@/hooks/use-data";
 import { PageHeader } from "@/components/layout/Shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ArrowRight, Activity, CheckCircle2, Clock } from "lucide-react";
+import { Plus, ArrowRight, Activity, CheckCircle2, Clock, Building2 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -44,9 +44,10 @@ export default function Dashboard() {
 function StatsOverview({ role, profile }: { role: string, profile: any }) {
   const { user } = useAuth();
   const { data: jobs } = useJobs();
+  const { data: companies } = useCompanies();
   
-  if (!jobs) return <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    {[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+  if (!jobs) return <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
   </div>;
 
   const filteredJobs = role === "ops" ? jobs : jobs.filter(j => 
@@ -59,7 +60,22 @@ function StatsOverview({ role, profile }: { role: string, profile: any }) {
   const pending = filteredJobs.filter(j => j.status === 'submitted').length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {role === "ops" && (
+        <Card className="glass-panel border-l-4 border-l-purple-500">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Companies</p>
+                <h3 className="text-4xl font-bold font-display mt-2 text-foreground">{companies?.length || 0}</h3>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                <Building2 className="h-6 w-6" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card className="glass-panel border-l-4 border-l-blue-500">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
