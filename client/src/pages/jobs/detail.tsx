@@ -38,6 +38,34 @@ export default function JobDetail() {
     updateJob({ id: jobId, data: { assignedEngineerId: engineerId, status: "assigned" } });
   };
 
+  /** Map workflow step (by index) + desired step status → job status for Ops updates */
+  const getJobStatusForStepChange = (
+    jobType: "engineering" | "r_and_r",
+    stepIndex: number,
+    stepStatus: "pending" | "in_progress" | "completed"
+  ): string => {
+    if (jobType === "engineering") {
+      const map: Record<number, Record<string, string>> = {
+        0: { pending: "new", in_progress: "new", completed: "assigned" },
+        1: { pending: "assigned", in_progress: "in_progress", completed: "submitted" },
+        2: { pending: "in_progress", in_progress: "submitted", completed: "completed" },
+      };
+      return map[stepIndex]?.[stepStatus] ?? job.status;
+    }
+    const map: Record<number, Record<string, string>> = {
+      0: { pending: "new", in_progress: "new", completed: "in_progress" },
+      1: { pending: "new", in_progress: "in_progress", completed: "in_progress" },
+      2: { pending: "in_progress", in_progress: "in_progress", completed: "submitted" },
+      3: { pending: "in_progress", in_progress: "submitted", completed: "completed" },
+    };
+    return map[stepIndex]?.[stepStatus] ?? job.status;
+  };
+
+  const handleWorkflowStepStatusChange = (stepIndex: number, stepStatus: "pending" | "in_progress" | "completed") => {
+    const newJobStatus = getJobStatusForStepChange(job.type as "engineering" | "r_and_r", stepIndex, stepStatus);
+    updateJob({ id: jobId, data: { status: newJobStatus as any } });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
@@ -172,39 +200,60 @@ export default function JobDetail() {
                 <div className="space-y-6">
                   {job.type === 'engineering' ? (
                     <>
-                      <WorkflowStep 
-                        title="Site Survey" 
-                        status={job.status === 'new' ? 'pending' : 'completed'} 
+                      <WorkflowStep
+                        title="Site Survey"
+                        status={job.status === 'new' ? 'pending' : 'completed'}
                         description="Collection of on-site measurements and photos."
+                        isOps={isOps}
+                        stepIndex={0}
+                        onStepStatusChange={handleWorkflowStepStatusChange}
                       />
-                      <WorkflowStep 
-                        title="Engineering Design" 
-                        status={['assigned', 'in_progress'].includes(job.status) ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                      <WorkflowStep
+                        title="Engineering Design"
+                        status={['assigned', 'in_progress'].includes(job.status) ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
                         description="Creation of electrical and structural plans."
+                        isOps={isOps}
+                        stepIndex={1}
+                        onStepStatusChange={handleWorkflowStepStatusChange}
                       />
-                      <WorkflowStep 
-                        title="Permit Package" 
-                        status={job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                      <WorkflowStep
+                        title="Permit Package"
+                        status={job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
                         description="Final documentation for city submittal."
+                        isOps={isOps}
+                        stepIndex={2}
+                        onStepStatusChange={handleWorkflowStepStatusChange}
                       />
                     </>
                   ) : (
                     <>
-                      <WorkflowStep 
-                        title="Before Removal Photos" 
-                        status={job.status === 'new' ? 'pending' : 'completed'} 
+                      <WorkflowStep
+                        title="Before Removal Photos"
+                        status={job.status === 'new' ? 'pending' : 'completed'}
+                        isOps={isOps}
+                        stepIndex={0}
+                        onStepStatusChange={handleWorkflowStepStatusChange}
                       />
-                      <WorkflowStep 
-                        title="Panel Removal" 
-                        status={job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                      <WorkflowStep
+                        title="Panel Removal"
+                        status={job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
+                        isOps={isOps}
+                        stepIndex={1}
+                        onStepStatusChange={handleWorkflowStepStatusChange}
                       />
-                      <WorkflowStep 
-                        title="Roofing Work" 
-                        status={job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                      <WorkflowStep
+                        title="Roofing Work"
+                        status={job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
+                        isOps={isOps}
+                        stepIndex={2}
+                        onStepStatusChange={handleWorkflowStepStatusChange}
                       />
-                      <WorkflowStep 
-                        title="Panel Reinstallation" 
-                        status={job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'} 
+                      <WorkflowStep
+                        title="Panel Reinstallation"
+                        status={job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
+                        isOps={isOps}
+                        stepIndex={3}
+                        onStepStatusChange={handleWorkflowStepStatusChange}
                       />
                     </>
                   )}
@@ -233,7 +282,23 @@ export default function JobDetail() {
   );
 }
 
-function WorkflowStep({ title, status, description }: { title: string, status: 'pending' | 'in_progress' | 'completed' | 'action_required', description?: string }) {
+type StepStatus = 'pending' | 'in_progress' | 'completed' | 'action_required';
+
+function WorkflowStep({
+  title,
+  status,
+  description,
+  isOps,
+  stepIndex,
+  onStepStatusChange,
+}: {
+  title: string;
+  status: StepStatus;
+  description?: string;
+  isOps?: boolean;
+  stepIndex?: number;
+  onStepStatusChange?: (stepIndex: number, stepStatus: 'pending' | 'in_progress' | 'completed') => void;
+}) {
   const icons = {
     pending: <Clock className="h-5 w-5 text-muted-foreground" />,
     in_progress: <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />,
@@ -248,6 +313,9 @@ function WorkflowStep({ title, status, description }: { title: string, status: '
     action_required: 'bg-orange-50 border-orange-100'
   };
 
+  const editableStatus = status === 'action_required' ? 'in_progress' : status;
+  const canChange = isOps && onStepStatusChange != null && stepIndex != null;
+
   return (
     <div className={cn("flex items-start gap-4 p-4 rounded-xl border transition-all", bgColors[status])}>
       <div className="mt-0.5">{icons[status]}</div>
@@ -255,9 +323,25 @@ function WorkflowStep({ title, status, description }: { title: string, status: '
         <p className="font-semibold text-sm">{title}</p>
         {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>
-      <div className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-white/50 border">
-        {status.replace('_', ' ')}
-      </div>
+      {canChange ? (
+        <Select
+          value={editableStatus}
+          onValueChange={(value) => onStepStatusChange(stepIndex, value as 'pending' | 'in_progress' | 'completed')}
+        >
+          <SelectTrigger className="w-[140px] h-8 text-[10px] uppercase font-bold tracking-wider bg-white/80 border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+      ) : (
+        <div className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-white/50 border">
+          {status.replace('_', ' ')}
+        </div>
+      )}
     </div>
   );
 }
@@ -287,8 +371,8 @@ function MessagesPanel({ jobId }: { jobId: number }) {
               <div key={msg.id} className={`flex gap-3 ${msg.userId === user?.id ? 'flex-row-reverse' : ''}`}>
                 <div className={`
                   max-w-[80%] rounded-xl p-3 text-sm
-                  ${msg.userId === user?.id 
-                    ? 'bg-primary text-primary-foreground rounded-tr-none' 
+                  ${msg.userId === user?.id
+                    ? 'bg-primary text-primary-foreground rounded-tr-none'
                     : 'bg-muted text-foreground rounded-tl-none'}
                 `}>
                   <p className="font-semibold text-xs mb-1 opacity-70">
@@ -301,10 +385,10 @@ function MessagesPanel({ jobId }: { jobId: number }) {
           </div>
         </ScrollArea>
         <div className="mt-4 flex gap-2 pt-4 border-t">
-          <Textarea 
+          <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Type a message..." 
+            placeholder="Type a message..."
             className="min-h-[60px] resize-none"
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
           />
