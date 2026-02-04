@@ -61,7 +61,8 @@ export default {
         },
         sidebar: {
           ring: "hsl(var(--sidebar-ring) / <alpha-value>)",
-          DEFAULT: "hsl(var(--sidebar) / <alpha-value>)",
+          DEFAULT: "hsl(var(--sidebar-background) / <alpha-value>)",
+          background: "hsl(var(--sidebar-background) / <alpha-value>)",
           foreground: "hsl(var(--sidebar-foreground) / <alpha-value>)",
           border: "hsl(var(--sidebar-border) / <alpha-value>)",
         },

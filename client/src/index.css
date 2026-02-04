@@ -38,15 +38,14 @@
   --ring: 221.2 83.2% 53.3%;
   
   /* Sidebar Specifics */
-  --sidebar-background: 222 47% 15%;
+  --sidebar-background: 222 47% 11%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-primary: 215 100% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 217 33% 20%;
+  --sidebar-accent: 217 33% 17%;
   --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 20%;
+  --sidebar-border: 217 33% 17%;
   --sidebar-ring: 215 100% 50%;
-  --sidebar: var(--sidebar-background);
 
   /* Chart Colors */
   --chart-1: 221.2 83.2% 53.3%;

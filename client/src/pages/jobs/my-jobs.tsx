@@ -12,16 +12,15 @@ export default function MyJobs() {
 
   // Filter jobs to show only those where the user is assigned or belongs to their company
   // Note: Backend might already filter this if passing filters, but we ensure it here too.
-  const myJobs = jobs?.filter(job => 
-    job.assignedEngineerId === user?.id || 
-    job.assignedOpsId === user?.id ||
-    job.project.companyId === (user as any)?.companyId // Depends on schema/profile
+  const myJobs = jobs?.filter(job =>
+    job.assignedEngineerId === user?.id ||
+    job.project.companyId === (user as any)?.companyId
   );
 
   return (
     <div className="space-y-8">
-      <PageHeader 
-        title="My Jobs" 
+      <PageHeader
+        title="My Jobs"
         description="Jobs assigned to you or your company."
       />
 

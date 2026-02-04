@@ -98,12 +98,12 @@ export async function registerRoutes(
 
   // === Projects ===
   app.get(api.projects.list.path, isAuthenticated, async (req: any, res) => {
-    // Access Control: 
+    // Access Control:
     // Ops: see all
     // Others: see only their company's projects
     const userId = req.user.claims.sub;
     const profile = await storage.getProfile(userId);
-    
+
     if (!profile) return res.status(403).json({ message: "Profile required" });
 
     let projects;
@@ -113,7 +113,7 @@ export async function registerRoutes(
       if (!profile.companyId) return res.status(400).json({ message: "Company required" });
       projects = await storage.getProjects(profile.companyId);
     }
-    
+
     res.json(projects);
   });
 
@@ -154,7 +154,7 @@ export async function registerRoutes(
     // Parse filters
     const query = req.query; // express query is string | undefined
     const projectId = query.projectId ? Number(query.projectId) : undefined;
-    
+
     const filters: any = { projectId };
 
     if (profile.role === "ops") {
@@ -176,7 +176,7 @@ export async function registerRoutes(
       const input = api.jobs.create.input.parse(req.body);
       // Validate rights...
       const job = await storage.createJob(input);
-      
+
       // Log history
       await storage.logJobHistory({
         jobId: job.id,
@@ -197,7 +197,7 @@ export async function registerRoutes(
   app.get(api.jobs.get.path, isAuthenticated, async (req, res) => {
     const job = await storage.getJob(Number(req.params.id));
     if (!job) return res.status(404).json({ message: "Job not found" });
-    
+
     // Fetch assigned engineer profile if exists
     let assignedEngineer = null;
     if (job.assignedEngineerId) {
@@ -228,10 +228,10 @@ export async function registerRoutes(
     try {
       const input = api.jobs.update.input.parse(req.body);
       const jobId = Number(req.params.id);
-      
+
       // Check previous status for history
       const previousJob = await storage.getJob(jobId);
-      
+
       const job = await storage.updateJob(jobId, input);
 
       // Log relevant changes
@@ -272,7 +272,7 @@ export async function registerRoutes(
     try {
       const jobId = Number(req.params.jobId);
       const input = api.messages.create.input.parse(req.body);
-      
+
       const message = await storage.createMessage({
         ...input,
         jobId,
@@ -340,7 +340,7 @@ async function seedDatabase() {
   const existingCompanies = await storage.getCompanies();
   if (existingCompanies.length === 0) {
     console.log("Seeding database...");
-    
+
     // Create Companies
     const opsCompany = await storage.createCompany({ name: "Solar Ops HQ", type: "ops" });
     const installerCompany = await storage.createCompany({ name: "Sunny Installers Inc", type: "installer" });
@@ -365,7 +365,7 @@ async function seedDatabase() {
       projectId: project1.id,
       type: "engineering",
       status: "new",
-      details: { notes: "Please survey roof." }
+      details: { notes: "Please survey roof." } as any
     });
 
     const project2 = await storage.createProject({
@@ -382,7 +382,7 @@ async function seedDatabase() {
       projectId: project2.id,
       type: "r_and_r",
       status: "in_progress",
-      details: { roofType: "Shingle" }
+      details: { roofType: "Shingle" } as any
     });
 
     console.log("Database seeded!");

@@ -1,11 +1,11 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useCompanies, useMyProfile, useJobs, useProjects } from "@/hooks/use-data";
+import { useMyProfile, useJobs, useProjects } from "@/hooks/use-data";
 import { PageHeader } from "@/components/layout/Shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ArrowRight, Activity, CheckCircle2, Clock, Building2 } from "lucide-react";
+import { Plus, ArrowRight, Activity, CheckCircle2, Clock } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -35,7 +35,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <RecentJobs role={profile.role} profile={profile} />
-        <ActivityChart />
+        <ActivityChart role={profile.role} profile={profile} />
       </div>
     </div>
   );
@@ -44,10 +44,9 @@ export default function Dashboard() {
 function StatsOverview({ role, profile }: { role: string, profile: any }) {
   const { user } = useAuth();
   const { data: jobs } = useJobs();
-  const { data: companies } = useCompanies();
   
-  if (!jobs) return <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+  if (!jobs) return <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    {[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
   </div>;
 
   const filteredJobs = role === "ops" ? jobs : jobs.filter(j => 
@@ -60,22 +59,7 @@ function StatsOverview({ role, profile }: { role: string, profile: any }) {
   const pending = filteredJobs.filter(j => j.status === 'submitted').length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {role === "ops" && (
-        <Card className="glass-panel border-l-4 border-l-purple-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Companies</p>
-                <h3 className="text-4xl font-bold font-display mt-2 text-foreground">{companies?.length || 0}</h3>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
-                <Building2 className="h-6 w-6" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <Card className="glass-panel border-l-4 border-l-blue-500">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
@@ -182,16 +166,57 @@ function RecentJobs({ role, profile }: { role: string, profile: any }) {
   );
 }
 
-function ActivityChart() {
-  const data = [
-    { name: 'Mon', jobs: 4 },
-    { name: 'Tue', jobs: 3 },
-    { name: 'Wed', jobs: 7 },
-    { name: 'Thu', jobs: 5 },
-    { name: 'Fri', jobs: 8 },
-    { name: 'Sat', jobs: 2 },
-    { name: 'Sun', jobs: 1 },
-  ];
+function ActivityChart({ role, profile }: { role: string, profile: any }) {
+  const { user } = useAuth();
+  const { data: jobs, isLoading } = useJobs();
+
+  if (isLoading) return <Skeleton className="h-[400px] rounded-2xl" />;
+
+  // Filter by role (same logic as StatsOverview and RecentJobs)
+  const filteredJobs = role === "ops" ? (jobs || []) : (jobs || []).filter(j =>
+    j.assignedEngineerId === user?.id ||
+    j.project.companyId === profile?.companyId
+  );
+
+  // Get last 7 days
+  const today = new Date();
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 6);
+
+  // Group jobs by day of week
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const jobsByDay = new Map<string, number>();
+
+  // Initialize all days in the last 7 days
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(sevenDaysAgo);
+    date.setDate(sevenDaysAgo.getDate() + i);
+    const dayName = dayNames[date.getDay()];
+    jobsByDay.set(dayName, 0);
+  }
+
+  // Count jobs by day
+  filteredJobs.forEach(job => {
+    if (job.createdAt) {
+      const createdDate = new Date(job.createdAt);
+      if (createdDate >= sevenDaysAgo && createdDate <= today) {
+        const dayName = dayNames[createdDate.getDay()];
+        jobsByDay.set(dayName, (jobsByDay.get(dayName) || 0) + 1);
+      }
+    }
+  });
+
+  // Create ordered data for the last 7 days
+  const data = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(sevenDaysAgo);
+    date.setDate(sevenDaysAgo.getDate() + i);
+    const dayName = dayNames[date.getDay()];
+    data.push({
+      name: dayName,
+      jobs: jobsByDay.get(dayName) || 0
+    });
+  }
 
   return (
     <Card className="col-span-1 shadow-md border-border/50">
@@ -205,7 +230,7 @@ function ActivityChart() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
-              <Tooltip 
+              <Tooltip
                 cursor={{fill: 'hsl(var(--muted))', opacity: 0.3}}
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
               />

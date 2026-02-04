@@ -1,6 +1,12 @@
-import type { Express } from "express";
-import { authStorage } from "./storage";
-import { isAuthenticated } from "./replitAuth";
+import type { Express, RequestHandler } from "express";
+import { authStorage } from "./storage.js";
+
+// Import isAuthenticated based on environment to avoid circular dependency
+const useReplitAuth = process.env.REPLIT_AUTH === "true";
+const authModule = useReplitAuth
+  ? await import("./replitAuth.js")
+  : await import("./localAuth.js");
+const isAuthenticated: RequestHandler = authModule.isAuthenticated;
 
 // Register auth-specific routes
 export function registerAuthRoutes(app: Express): void {

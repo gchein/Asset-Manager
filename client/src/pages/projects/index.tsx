@@ -22,8 +22,8 @@ export default function ProjectsList() {
 
   return (
     <div className="space-y-8">
-      <PageHeader 
-        title="Projects" 
+      <PageHeader
+        title="Projects"
         description="Manage customer sites and installations."
         action={
           <CreateProjectDialog open={open} onOpenChange={setOpen}>
@@ -199,7 +199,7 @@ function CreateProjectDialog({ children, open, onOpenChange }: any) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Utility Provider</FormLabel>
-                    <FormControl><Input {...field} placeholder="PG&E" /></FormControl>
+                    <FormControl><Input {...field} value={field.value ?? ""} placeholder="PG&E" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

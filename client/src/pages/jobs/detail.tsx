@@ -16,6 +16,61 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
+function getAllowedStatuses(role: string, jobType: string, currentStatus: string, isAssigned: boolean, isCompanyJob: boolean): string[] {
+  if (role === 'ops') {
+    return ['new', 'assigned', 'in_progress', 'submitted', 'needs_revision', 'completed', 'cancelled'];
+  }
+
+  if (role === 'engineer' && isAssigned) {
+    // Engineers can progress their assigned jobs
+    if (currentStatus === 'assigned') return ['in_progress'];
+    if (currentStatus === 'in_progress') return ['submitted', 'needs_revision'];
+    if (currentStatus === 'needs_revision') return ['in_progress'];
+  }
+
+  if ((role === 'installer' || role === 'roofer') && isCompanyJob) {
+    // Can approve/complete jobs for their company
+    if (currentStatus === 'submitted') return ['completed', 'needs_revision'];
+    if (currentStatus === 'in_progress') return ['completed'];
+  }
+
+  return []; // No transitions allowed
+}
+
+function canEditWorkflowStep(
+  stepName: string,
+  role: string,
+  jobType: string,
+  isAssigned: boolean,
+  isCompanyJob: boolean
+): boolean {
+  if (role === 'ops') return true;
+
+  if (jobType === 'engineering') {
+    if (stepName === 'Site Survey' && role === 'engineer' && isAssigned) return true;
+    if (stepName === 'Engineering Design' && role === 'engineer' && isAssigned) return true;
+    if (stepName === 'Permit Package' && role === 'ops') return true; // Only ops
+  }
+
+  if (jobType === 'r_and_r') {
+    if ((role === 'roofer' || role === 'installer') && isCompanyJob) return true;
+    if (role === 'engineer' && isAssigned) return true;
+  }
+
+  return false;
+}
+
+type JobForStep = { status: string; type: string; details?: Record<string, unknown> | null };
+function getWorkflowStepStatus(
+  stepName: string,
+  job: JobForStep,
+  derived: 'pending' | 'in_progress' | 'completed'
+): 'pending' | 'in_progress' | 'completed' | 'action_required' {
+  const stored = (job.details?.workflowSteps as Record<string, string>)?.[stepName];
+  if (stored === 'pending' || stored === 'in_progress' || stored === 'completed') return stored;
+  return derived as 'pending' | 'in_progress' | 'completed';
+}
+
 export default function JobDetail() {
   const [, params] = useRoute("/jobs/:id");
   const jobId = parseInt(params?.id || "0");
@@ -29,41 +84,62 @@ export default function JobDetail() {
   }
 
   const isOps = profile?.role === "ops";
+  const isAssigned = job.assignedEngineerId === profile?.userId;
+  const isCompanyJob = job.project.companyId === profile?.companyId;
+
+  const allowedStatuses = getAllowedStatuses(
+    profile?.role || '',
+    job.type,
+    job.status,
+    isAssigned,
+    isCompanyJob
+  );
+
+  const canUpdateStatus = allowedStatuses.length > 0;
 
   const handleStatusChange = (status: string) => {
     updateJob({ id: jobId, data: { status: status as any } });
   };
 
   const handleEngineerChange = (engineerId: string) => {
-    updateJob({ id: jobId, data: { assignedEngineerId: engineerId, status: "assigned" } });
-  };
-
-  /** Map workflow step (by index) + desired step status → job status for Ops updates */
-  const getJobStatusForStepChange = (
-    jobType: "engineering" | "r_and_r",
-    stepIndex: number,
-    stepStatus: "pending" | "in_progress" | "completed"
-  ): string => {
-    if (jobType === "engineering") {
-      const map: Record<number, Record<string, string>> = {
-        0: { pending: "new", in_progress: "new", completed: "assigned" },
-        1: { pending: "assigned", in_progress: "in_progress", completed: "submitted" },
-        2: { pending: "in_progress", in_progress: "submitted", completed: "completed" },
-      };
-      return map[stepIndex]?.[stepStatus] ?? job.status;
+    if (engineerId === "unassigned") {
+      updateJob({ id: jobId, data: { assignedEngineerId: null, status: "new" } });
+    } else {
+      updateJob({ id: jobId, data: { assignedEngineerId: engineerId, status: "assigned" } });
     }
-    const map: Record<number, Record<string, string>> = {
-      0: { pending: "new", in_progress: "new", completed: "in_progress" },
-      1: { pending: "new", in_progress: "in_progress", completed: "in_progress" },
-      2: { pending: "in_progress", in_progress: "in_progress", completed: "submitted" },
-      3: { pending: "in_progress", in_progress: "submitted", completed: "completed" },
-    };
-    return map[stepIndex]?.[stepStatus] ?? job.status;
   };
 
-  const handleWorkflowStepStatusChange = (stepIndex: number, stepStatus: "pending" | "in_progress" | "completed") => {
-    const newJobStatus = getJobStatusForStepChange(job.type as "engineering" | "r_and_r", stepIndex, stepStatus);
-    updateJob({ id: jobId, data: { status: newJobStatus as any } });
+  const handleWorkflowStepChange = (stepName: string, newStepStatus: 'pending' | 'in_progress' | 'completed') => {
+    let newJobStatus = job.status;
+
+    if (job.type === 'engineering') {
+      if (stepName === 'Site Survey') {
+        if (newStepStatus === 'completed') newJobStatus = 'in_progress';
+        else if (newStepStatus === 'in_progress') newJobStatus = 'assigned';
+      } else if (stepName === 'Engineering Design') {
+        if (newStepStatus === 'completed') newJobStatus = 'submitted';
+        else if (newStepStatus === 'in_progress') newJobStatus = 'in_progress';
+      } else if (stepName === 'Permit Package') {
+        if (newStepStatus === 'completed') newJobStatus = 'completed';
+        else if (newStepStatus === 'in_progress') newJobStatus = 'submitted';
+      }
+    } else if (job.type === 'r_and_r') {
+      // For R&R jobs, map workflow to status
+      if (newStepStatus === 'completed') {
+        // Check if this is the last step
+        if (stepName === 'Panel Reinstallation') {
+          newJobStatus = 'completed';
+        } else {
+          newJobStatus = 'in_progress';
+        }
+      } else if (newStepStatus === 'in_progress') {
+        newJobStatus = 'in_progress';
+      }
+    }
+
+    const workflowSteps = { ...(job.details?.workflowSteps as Record<string, string> || {}), [stepName]: newStepStatus };
+    const newDetails = { ...(job.details || {}), workflowSteps };
+    updateJob({ id: jobId, data: { details: newDetails as any, status: newJobStatus } });
   };
 
   return (
@@ -89,7 +165,7 @@ export default function JobDetail() {
         </div>
 
         <div className="flex items-center gap-3">
-          {isOps && (
+          {canUpdateStatus && (
             <div className="flex flex-col gap-1">
               <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Change Status</Label>
               <Select defaultValue={job.status} onValueChange={handleStatusChange}>
@@ -97,11 +173,11 @@ export default function JobDetail() {
                   <SelectValue placeholder="Update Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="assigned">Assigned</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="submitted">Submitted</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  {allowedStatuses.map(status => (
+                    <SelectItem key={status} value={status}>
+                      {status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -202,58 +278,51 @@ export default function JobDetail() {
                     <>
                       <WorkflowStep
                         title="Site Survey"
-                        status={job.status === 'new' ? 'pending' : 'completed'}
+                        status={getWorkflowStepStatus('Site Survey', job, job.status === 'new' ? 'pending' : 'completed')}
                         description="Collection of on-site measurements and photos."
-                        isOps={isOps}
-                        stepIndex={0}
-                        onStepStatusChange={handleWorkflowStepStatusChange}
+                        canEdit={canEditWorkflowStep('Site Survey', profile?.role || '', job.type, isAssigned, isCompanyJob)}
+                        onStatusChange={(newStatus) => handleWorkflowStepChange('Site Survey', newStatus)}
                       />
                       <WorkflowStep
                         title="Engineering Design"
-                        status={['assigned', 'in_progress'].includes(job.status) ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
+                        status={getWorkflowStepStatus('Engineering Design', job, ['assigned', 'in_progress'].includes(job.status) ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending')}
                         description="Creation of electrical and structural plans."
-                        isOps={isOps}
-                        stepIndex={1}
-                        onStepStatusChange={handleWorkflowStepStatusChange}
+                        canEdit={canEditWorkflowStep('Engineering Design', profile?.role || '', job.type, isAssigned, isCompanyJob)}
+                        onStatusChange={(newStatus) => handleWorkflowStepChange('Engineering Design', newStatus)}
                       />
                       <WorkflowStep
                         title="Permit Package"
-                        status={job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
+                        status={getWorkflowStepStatus('Permit Package', job, job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending')}
                         description="Final documentation for city submittal."
-                        isOps={isOps}
-                        stepIndex={2}
-                        onStepStatusChange={handleWorkflowStepStatusChange}
+                        canEdit={canEditWorkflowStep('Permit Package', profile?.role || '', job.type, isAssigned, isCompanyJob)}
+                        onStatusChange={(newStatus) => handleWorkflowStepChange('Permit Package', newStatus)}
                       />
                     </>
                   ) : (
                     <>
                       <WorkflowStep
                         title="Before Removal Photos"
-                        status={job.status === 'new' ? 'pending' : 'completed'}
-                        isOps={isOps}
-                        stepIndex={0}
-                        onStepStatusChange={handleWorkflowStepStatusChange}
+                        status={getWorkflowStepStatus('Before Removal Photos', job, job.status === 'new' ? 'pending' : 'completed')}
+                        canEdit={canEditWorkflowStep('Before Removal Photos', profile?.role || '', job.type, isAssigned, isCompanyJob)}
+                        onStatusChange={(newStatus) => handleWorkflowStepChange('Before Removal Photos', newStatus)}
                       />
                       <WorkflowStep
                         title="Panel Removal"
-                        status={job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
-                        isOps={isOps}
-                        stepIndex={1}
-                        onStepStatusChange={handleWorkflowStepStatusChange}
+                        status={getWorkflowStepStatus('Panel Removal', job, job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending')}
+                        canEdit={canEditWorkflowStep('Panel Removal', profile?.role || '', job.type, isAssigned, isCompanyJob)}
+                        onStatusChange={(newStatus) => handleWorkflowStepChange('Panel Removal', newStatus)}
                       />
                       <WorkflowStep
                         title="Roofing Work"
-                        status={job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
-                        isOps={isOps}
-                        stepIndex={2}
-                        onStepStatusChange={handleWorkflowStepStatusChange}
+                        status={getWorkflowStepStatus('Roofing Work', job, job.status === 'in_progress' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending')}
+                        canEdit={canEditWorkflowStep('Roofing Work', profile?.role || '', job.type, isAssigned, isCompanyJob)}
+                        onStatusChange={(newStatus) => handleWorkflowStepChange('Roofing Work', newStatus)}
                       />
                       <WorkflowStep
                         title="Panel Reinstallation"
-                        status={job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending'}
-                        isOps={isOps}
-                        stepIndex={3}
-                        onStepStatusChange={handleWorkflowStepStatusChange}
+                        status={getWorkflowStepStatus('Panel Reinstallation', job, job.status === 'submitted' ? 'in_progress' : job.status === 'completed' ? 'completed' : 'pending')}
+                        canEdit={canEditWorkflowStep('Panel Reinstallation', profile?.role || '', job.type, isAssigned, isCompanyJob)}
+                        onStatusChange={(newStatus) => handleWorkflowStepChange('Panel Reinstallation', newStatus)}
                       />
                     </>
                   )}
@@ -282,22 +351,18 @@ export default function JobDetail() {
   );
 }
 
-type StepStatus = 'pending' | 'in_progress' | 'completed' | 'action_required';
-
 function WorkflowStep({
   title,
   status,
   description,
-  isOps,
-  stepIndex,
-  onStepStatusChange,
+  canEdit = false,
+  onStatusChange
 }: {
   title: string;
-  status: StepStatus;
+  status: 'pending' | 'in_progress' | 'completed' | 'action_required';
   description?: string;
-  isOps?: boolean;
-  stepIndex?: number;
-  onStepStatusChange?: (stepIndex: number, stepStatus: 'pending' | 'in_progress' | 'completed') => void;
+  canEdit?: boolean;
+  onStatusChange?: (newStatus: 'pending' | 'in_progress' | 'completed') => void;
 }) {
   const icons = {
     pending: <Clock className="h-5 w-5 text-muted-foreground" />,
@@ -313,9 +378,6 @@ function WorkflowStep({
     action_required: 'bg-orange-50 border-orange-100'
   };
 
-  const editableStatus = status === 'action_required' ? 'in_progress' : status;
-  const canChange = isOps && onStepStatusChange != null && stepIndex != null;
-
   return (
     <div className={cn("flex items-start gap-4 p-4 rounded-xl border transition-all", bgColors[status])}>
       <div className="mt-0.5">{icons[status]}</div>
@@ -323,12 +385,9 @@ function WorkflowStep({
         <p className="font-semibold text-sm">{title}</p>
         {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>
-      {canChange ? (
-        <Select
-          value={editableStatus}
-          onValueChange={(value) => onStepStatusChange(stepIndex, value as 'pending' | 'in_progress' | 'completed')}
-        >
-          <SelectTrigger className="w-[140px] h-8 text-[10px] uppercase font-bold tracking-wider bg-white/80 border">
+      {canEdit && onStatusChange ? (
+        <Select value={status} onValueChange={(val) => onStatusChange(val as any)}>
+          <SelectTrigger className="w-[140px] h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

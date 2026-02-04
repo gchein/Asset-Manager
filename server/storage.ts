@@ -1,6 +1,6 @@
-import { 
+import {
   users, companies, profiles, projects, jobs, messages, jobHistory, warranties, commissionItems,
-  type User, type Company, type InsertCompany, type Profile, type InsertProfile,
+  type User, type InsertUser, type Company, type InsertCompany, type Profile, type InsertProfile,
   type Project, type InsertProject, type Job, type InsertJob, type Message, type InsertMessage,
   type JobHistory, type Warranty, type InsertWarranty, type CommissionItem, type InsertCommissionItem,
   type ProjectWithJobs
@@ -29,7 +29,7 @@ export interface IStorage {
   createProject(project: InsertProject): Promise<Project>;
 
   // Jobs
-  getJobs(filters?: { projectId?: number, companyId?: number, assignedToId?: string }): Promise<(Job & { project: Project })[]>;
+  getJobs(filters?: { projectId?: number, companyId?: number, assignedToId?: string }): Promise<(Job & { project: Project & { company: Company } })[]>;
   getJob(id: number): Promise<(Job & { project: Project }) | undefined>;
   createJob(job: InsertJob): Promise<Job>;
   updateJob(id: number, updates: Partial<InsertJob>): Promise<Job>;
@@ -114,13 +114,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Jobs
-  async getJobs(filters?: { projectId?: number, companyId?: number, assignedToId?: string }): Promise<(Job & { project: Project })[]> {
+  async getJobs(filters?: { projectId?: number, companyId?: number, assignedToId?: string }): Promise<(Job & { project: Project & { company: Company } })[]> {
     let query = db.select({
       job: jobs,
-      project: projects
+      project: projects,
+      company: companies
     })
     .from(jobs)
-    .innerJoin(projects, eq(jobs.projectId, projects.id));
+    .innerJoin(projects, eq(jobs.projectId, projects.id))
+    .innerJoin(companies, eq(projects.companyId, companies.id));
 
     if (filters) {
       if (filters.projectId) {
@@ -132,10 +134,10 @@ export class DatabaseStorage implements IStorage {
       }
       if (filters.assignedToId) {
         // Check both engineer and ops assignment
-        // Since drizzle doesn't easily support OR in this chain without importing `or`, 
+        // Since drizzle doesn't easily support OR in this chain without importing `or`,
         // let's just do one or the other if passed, or both?
         // For simplicity, let's assume filtering by specific role assignment usually.
-        // But for "My Jobs", it could be either. 
+        // But for "My Jobs", it could be either.
         // Actually, let's filter in memory if complex, or use SQL OR.
         // For now, let's handle it by checking if the user is assigned as ops OR engineer.
         // But `filters` is simple here. Let's refine the query construction.
@@ -144,16 +146,22 @@ export class DatabaseStorage implements IStorage {
     }
 
     const results = await query;
-    
+
     // Post-filter for assignment if needed (simpler than dynamic SQL construction for now)
-    let finalResults = results.map(r => ({ ...r.job, project: r.project }));
-    
+    let finalResults = results.map(r => ({
+      ...r.job,
+      project: {
+        ...r.project,
+        company: r.company
+      }
+    }));
+
     if (filters?.assignedToId) {
-       finalResults = finalResults.filter(j => 
+       finalResults = finalResults.filter(j =>
          j.assignedEngineerId === filters.assignedToId
        );
     }
-    
+
     // Also filter by companyId if passed (it was done in query, but ensure)
     if (filters?.companyId) {
         finalResults = finalResults.filter(j => j.project.companyId === filters.companyId);
@@ -198,7 +206,7 @@ export class DatabaseStorage implements IStorage {
     .innerJoin(users, eq(messages.userId, users.id))
     .where(eq(messages.jobId, jobId))
     .orderBy(desc(messages.createdAt)); // Newest first? Or oldest? Usually chat is oldest at top. Let's do desc for "recent" API but frontend might reverse.
-    
+
     return result.map(r => ({ ...r.message, user: r.user }));
   }
 

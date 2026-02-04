@@ -31,7 +31,9 @@ export default function AllJobs() {
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="space-y-1">
                     <div className="font-medium">Job #{job.id} - {job.project.customerName}</div>
-                    <div className="text-sm text-muted-foreground">{job.type === 'engineering' ? 'Engineering' : 'R&R'}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {job.type === 'engineering' ? 'Engineering' : 'R&R'} • {(job.project as any).company?.name || 'Unknown Company'}
+                    </div>
                   </div>
                   <StatusBadge status={job.status} />
                 </CardContent>
