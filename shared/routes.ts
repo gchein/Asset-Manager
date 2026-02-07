@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { 
-  insertCompanySchema, 
-  insertProjectSchema, 
-  insertJobSchema, 
-  insertMessageSchema, 
-  insertWarrantySchema, 
+import {
+  insertCompanySchema,
+  insertProjectSchema,
+  insertJobSchema,
+  insertMessageSchema,
+  insertWarrantySchema,
   insertCommissionItemSchema,
   companies,
   projects,
@@ -13,6 +13,7 @@ import {
   jobHistory,
   warranties,
   commissionItems,
+  ppaDocuments,
   insertProfileSchema,
   profiles
 } from './schema';
@@ -195,6 +196,35 @@ export const api = {
       responses: {
         201: z.custom<typeof warranties.$inferSelect>(),
         400: errorSchemas.validation,
+      },
+    },
+  },
+
+  // === PPA Documents ===
+  ppaDocuments: {
+    sendContract: {
+      method: 'POST' as const,
+      path: '/api/projects/:id/send-contract',
+      responses: {
+        201: z.custom<typeof ppaDocuments.$inferSelect>(),
+        400: errorSchemas.validation,
+        403: errorSchemas.forbidden,
+      },
+    },
+    list: {
+      method: 'GET' as const,
+      path: '/api/projects/:id/ppa-documents',
+      responses: {
+        200: z.array(z.custom<typeof ppaDocuments.$inferSelect>()),
+      },
+    },
+    checkStatus: {
+      method: 'POST' as const,
+      path: '/api/ppa-documents/:id/check-status',
+      responses: {
+        200: z.custom<typeof ppaDocuments.$inferSelect>(),
+        403: errorSchemas.forbidden,
+        404: errorSchemas.notFound,
       },
     },
   },

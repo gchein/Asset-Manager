@@ -38,6 +38,7 @@ export const profiles = pgTable("profiles", {
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email"),
   address: text("address").notNull(),
   city: text("city").notNull(),
   state: text("state").notNull(),
@@ -99,6 +100,17 @@ export const commissionItems = pgTable("commission_items", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const ppaDocuments = pgTable("ppa_documents", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  envelopeId: text("envelope_id").notNull(),
+  status: text("status").notNull(),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
   profiles: many(profiles),
@@ -122,6 +134,14 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [companies.id],
   }),
   jobs: many(jobs),
+  ppaDocuments: many(ppaDocuments),
+}));
+
+export const ppaDocumentsRelations = relations(ppaDocuments, ({ one }) => ({
+  project: one(projects, {
+    fields: [ppaDocuments.projectId],
+    references: [projects.id],
+  }),
 }));
 
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
@@ -158,6 +178,7 @@ export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, created
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertWarrantySchema = createInsertSchema(warranties).omit({ id: true, createdAt: true });
 export const insertCommissionItemSchema = createInsertSchema(commissionItems).omit({ id: true, createdAt: true });
+export const insertPpaDocumentSchema = createInsertSchema(ppaDocuments).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 export type Company = typeof companies.$inferSelect;
@@ -168,6 +189,7 @@ export type Message = typeof messages.$inferSelect;
 export type JobHistory = typeof jobHistory.$inferSelect;
 export type Warranty = typeof warranties.$inferSelect;
 export type CommissionItem = typeof commissionItems.$inferSelect;
+export type PpaDocument = typeof ppaDocuments.$inferSelect;
 
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
@@ -176,6 +198,7 @@ export type InsertJob = z.infer<typeof insertJobSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertWarranty = z.infer<typeof insertWarrantySchema>;
 export type InsertCommissionItem = z.infer<typeof insertCommissionItemSchema>;
+export type InsertPpaDocument = z.infer<typeof insertPpaDocumentSchema>;
 
 // Detailed Types for API
 export type ProjectWithJobs = Project & { jobs: Job[] };
