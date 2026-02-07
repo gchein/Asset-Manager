@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, type errorSchemas } from "@shared/routes";
 import { z } from "zod";
-import type { 
-  InsertCompany, InsertProfile, InsertProject, InsertJob, InsertMessage, InsertWarranty, InsertCommissionItem 
+import type {
+  InsertCompany, InsertProfile, InsertProject, InsertJob, InsertMessage, InsertWarranty, InsertCommissionItem,
+  PpaDocument
 } from "@shared/schema";
 
 // --- Companies ---
@@ -262,6 +263,62 @@ export function useCreateWarranty() {
     },
     onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: [api.warranties.list.path, jobId] });
+    },
+  });
+}
+
+// --- PPA Documents ---
+export function usePpaDocuments(projectId: number) {
+  return useQuery({
+    queryKey: [api.ppaDocuments.list.path, projectId],
+    queryFn: async () => {
+      const url = buildUrl(api.ppaDocuments.list.path, { id: projectId });
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch PPA documents");
+      return res.json() as Promise<PpaDocument[]>;
+    },
+    enabled: !!projectId,
+  });
+}
+
+export function useSendContract() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (projectId: number) => {
+      const url = buildUrl(api.ppaDocuments.sendContract.path, { id: projectId });
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to send contract");
+      }
+      return res.json() as Promise<PpaDocument>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [api.ppaDocuments.list.path, data.projectId] });
+    },
+  });
+}
+
+export function useCheckDocumentStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ docId, projectId }: { docId: number; projectId: number }) => {
+      const url = buildUrl(api.ppaDocuments.checkStatus.path, { id: docId });
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to check status");
+      }
+      return res.json() as Promise<PpaDocument>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [api.ppaDocuments.list.path, data.projectId] });
     },
   });
 }

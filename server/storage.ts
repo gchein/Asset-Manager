@@ -1,8 +1,9 @@
 import {
-  users, companies, profiles, projects, jobs, messages, jobHistory, warranties, commissionItems,
+  users, companies, profiles, projects, jobs, messages, jobHistory, warranties, commissionItems, ppaDocuments,
   type User, type InsertUser, type Company, type InsertCompany, type Profile, type InsertProfile,
   type Project, type InsertProject, type Job, type InsertJob, type Message, type InsertMessage,
   type JobHistory, type Warranty, type InsertWarranty, type CommissionItem, type InsertCommissionItem,
+  type PpaDocument, type InsertPpaDocument,
   type ProjectWithJobs
 } from "@shared/schema";
 import { db } from "./db";
@@ -49,6 +50,12 @@ export interface IStorage {
   // Commission Items
   getCommissionItems(jobId: number): Promise<CommissionItem[]>;
   createCommissionItem(item: InsertCommissionItem): Promise<CommissionItem>;
+
+  // PPA Documents
+  createPpaDocument(doc: InsertPpaDocument): Promise<PpaDocument>;
+  getPpaDocument(id: number): Promise<PpaDocument | undefined>;
+  getPpaDocumentsByProject(projectId: number): Promise<PpaDocument[]>;
+  updatePpaDocumentStatus(id: number, status: string): Promise<PpaDocument>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -255,6 +262,26 @@ export class DatabaseStorage implements IStorage {
   async createCommissionItem(item: InsertCommissionItem): Promise<CommissionItem> {
     const [newItem] = await db.insert(commissionItems).values(item).returning();
     return newItem;
+  }
+
+  // PPA Documents
+  async createPpaDocument(doc: InsertPpaDocument): Promise<PpaDocument> {
+    const [newDoc] = await db.insert(ppaDocuments).values(doc).returning();
+    return newDoc;
+  }
+
+  async getPpaDocument(id: number): Promise<PpaDocument | undefined> {
+    const [doc] = await db.select().from(ppaDocuments).where(eq(ppaDocuments.id, id));
+    return doc;
+  }
+
+  async getPpaDocumentsByProject(projectId: number): Promise<PpaDocument[]> {
+    return await db.select().from(ppaDocuments).where(eq(ppaDocuments.projectId, projectId)).orderBy(desc(ppaDocuments.createdAt));
+  }
+
+  async updatePpaDocumentStatus(id: number, status: string): Promise<PpaDocument> {
+    const [updated] = await db.update(ppaDocuments).set({ status, updatedAt: new Date() }).where(eq(ppaDocuments.id, id)).returning();
+    return updated;
   }
 }
 

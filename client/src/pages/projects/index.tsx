@@ -107,6 +107,7 @@ function CreateProjectDialog({ children, open, onOpenChange }: any) {
     resolver: zodResolver(insertProjectSchema),
     defaultValues: {
       customerName: "",
+      customerEmail: "",
       address: "",
       city: "",
       state: "",
@@ -145,6 +146,17 @@ function CreateProjectDialog({ children, open, onOpenChange }: any) {
                   <FormItem className="col-span-2">
                     <FormLabel>Customer Name</FormLabel>
                     <FormControl><Input {...field} placeholder="John Doe" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="customerEmail"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Customer Email</FormLabel>
+                    <FormControl><Input {...field} value={field.value ?? ""} type="email" placeholder="john@example.com" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

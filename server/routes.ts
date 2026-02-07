@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { sendContract, getEnvelopeStatus } from "./services/docusign";
 import { db } from "./db";
 import { users, profiles } from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -327,6 +328,62 @@ export async function registerRoutes(
     } catch (err) {
         if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
         throw err;
+    }
+  });
+
+  // === PPA Documents / DocuSign ===
+  app.post(api.ppaDocuments.sendContract.path, isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfile(req.user.claims.sub);
+      if (!profile || profile.role !== "ops") {
+        return res.status(403).json({ message: "Only Ops users can send contracts" });
+      }
+
+      const project = await storage.getProject(Number(req.params.id));
+      if (!project) return res.status(404).json({ message: "Project not found" });
+      if (!project.customerEmail) {
+        return res.status(400).json({ message: "Project has no customer email" });
+      }
+
+      const result = await sendContract(project.customerName, project.customerEmail);
+
+      const doc = await storage.createPpaDocument({
+        projectId: project.id,
+        envelopeId: result.envelope_id,
+        status: result.status,
+        customerName: result.name,
+        customerEmail: result.email,
+      });
+
+      res.status(201).json(doc);
+    } catch (err: any) {
+      console.error("Send contract error:", err);
+      res.status(500).json({ message: err.message || "Failed to send contract" });
+    }
+  });
+
+  app.get(api.ppaDocuments.list.path, isAuthenticated, async (req, res) => {
+    const docs = await storage.getPpaDocumentsByProject(Number(req.params.id));
+    res.json(docs);
+  });
+
+  app.post(api.ppaDocuments.checkStatus.path, isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfile(req.user.claims.sub);
+      if (!profile || profile.role !== "ops") {
+        return res.status(403).json({ message: "Only Ops users can check status" });
+      }
+
+      const doc = await storage.getPpaDocument(Number(req.params.id));
+      if (!doc) return res.status(404).json({ message: "PPA document not found" });
+
+      const status = await getEnvelopeStatus(doc.envelopeId);
+      const updated = await storage.updatePpaDocumentStatus(doc.id, status);
+
+      res.json(updated);
+    } catch (err: any) {
+      console.error("Check status error:", err);
+      res.status(500).json({ message: err.message || "Failed to check status" });
     }
   });
 
