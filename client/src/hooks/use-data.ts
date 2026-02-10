@@ -322,3 +322,23 @@ export function useCheckDocumentStatus() {
     },
   });
 }
+
+export function useDownloadDocument() {
+  return useMutation({
+    mutationFn: async ({ docId, customerName }: { docId: number; customerName: string }) => {
+      const url = buildUrl(api.ppaDocuments.downloadDocument.path, { id: docId });
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to download document");
+      }
+      const blob = await res.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `PPA-${customerName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+      a.click();
+      URL.revokeObjectURL(downloadUrl);
+    },
+  });
+}
