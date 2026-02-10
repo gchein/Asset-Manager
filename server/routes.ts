@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
-import { sendContract, getEnvelopeStatus } from "./services/docusign";
+import { sendContract, getEnvelopeStatus, downloadDocument } from "./services/docusign";
 import { db } from "./db";
 import { users, profiles } from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -384,6 +384,27 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("Check status error:", err);
       res.status(500).json({ message: err.message || "Failed to check status" });
+    }
+  });
+
+  app.get(api.ppaDocuments.downloadDocument.path, isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getProfile(req.user.claims.sub);
+      if (!profile || profile.role !== "ops") {
+        return res.status(403).json({ message: "Only Ops users can download documents" });
+      }
+
+      const doc = await storage.getPpaDocument(Number(req.params.id));
+      if (!doc) return res.status(404).json({ message: "PPA document not found" });
+
+      const pdfBuffer = await downloadDocument(doc.envelopeId);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="PPA-${doc.customerName.replace(/[^a-zA-Z0-9]/g, "_")}.pdf"`);
+      res.send(Buffer.from(pdfBuffer));
+    } catch (err: any) {
+      console.error("Download document error:", err);
+      res.status(500).json({ message: err.message || "Failed to download document" });
     }
   });
 

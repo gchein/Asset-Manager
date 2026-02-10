@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useProject, useJobs, useMyProfile, usePpaDocuments, useSendContract, useCheckDocumentStatus } from "@/hooks/use-data";
+import { useProject, useJobs, useMyProfile, usePpaDocuments, useSendContract, useCheckDocumentStatus, useDownloadDocument } from "@/hooks/use-data";
 import { PageHeader } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Building, Calendar, Send, RefreshCw, FileText, Loader2, Mail } from "lucide-react";
+import { MapPin, Building, Calendar, Send, RefreshCw, FileText, Loader2, Mail, Download } from "lucide-react";
 import { format } from "date-fns";
 
 export default function ProjectDetail() {
@@ -19,6 +19,7 @@ export default function ProjectDetail() {
   const { data: ppaDocuments, isLoading: loadingDocs } = usePpaDocuments(projectId);
   const { mutateAsync: sendContract, isPending: isSending } = useSendContract();
   const { mutateAsync: checkStatus, isPending: isChecking } = useCheckDocumentStatus();
+  const { mutateAsync: downloadDoc, isPending: isDownloading } = useDownloadDocument();
 
   const isOps = profile?.role === "ops";
 
@@ -129,16 +130,28 @@ export default function ProjectDetail() {
                           Sent {format(new Date(doc.createdAt), "MMM d, yyyy h:mm a")}
                         </p>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => checkStatus({ docId: doc.id, projectId })}
-                        disabled={isChecking}
-                        className="w-full"
-                      >
-                        {isChecking ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
-                        Check Status
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => checkStatus({ docId: doc.id, projectId })}
+                          disabled={isChecking}
+                          className="flex-1"
+                        >
+                          {isChecking ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
+                          Check Status
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadDoc({ docId: doc.id, customerName: doc.customerName })}
+                          disabled={isDownloading || doc.status === "sent"}
+                          className="flex-1"
+                        >
+                          {isDownloading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Download className="mr-2 h-3 w-3" />}
+                          Download
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

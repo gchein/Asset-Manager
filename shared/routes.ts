@@ -227,6 +227,15 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    downloadDocument: {
+      method: 'GET' as const,
+      path: '/api/ppa-documents/:id/download',
+      responses: {
+        200: z.any(),
+        403: errorSchemas.forbidden,
+        404: errorSchemas.notFound,
+      },
+    },
   },
 
   // === Commission Items ===
