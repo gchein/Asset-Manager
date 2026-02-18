@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Building, Calendar, Send, RefreshCw, FileText, Loader2, Mail, Download } from "lucide-react";
 import { format } from "date-fns";
+import { EnergyReportCard } from "@/components/energy-report";
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -160,6 +161,12 @@ export default function ProjectDetail() {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {project.inverterProviderId && project.siteId && (
+          <div className="lg:col-span-1">
+            <EnergyReportCard projectId={projectId} />
+          </div>
         )}
 
         <div className="lg:col-span-2 space-y-4">

@@ -342,3 +342,28 @@ export function useDownloadDocument() {
     },
   });
 }
+
+// --- Energy Report ---
+export function useEnergyReport(projectId: number, enabled: boolean = true) {
+  return useQuery({
+    queryKey: [api.energyReport.get.path, projectId],
+    queryFn: async () => {
+      const url = buildUrl(api.energyReport.get.path, { id: projectId });
+      const res = await fetch(url, { credentials: "include" });
+
+      // Return null if provider not configured (400) instead of throwing
+      if (res.status === 400) {
+        return null;
+      }
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch energy report");
+      }
+
+      return api.energyReport.get.responses[200].parse(await res.json());
+    },
+    enabled: enabled && !!projectId,
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
+    staleTime: 2 * 60 * 1000, // Consider data stale after 2 minutes
+  });
+}

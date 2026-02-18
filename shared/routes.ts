@@ -257,6 +257,25 @@ export const api = {
       },
     },
   },
+
+  // === Energy Report ===
+  energyReport: {
+    get: {
+      method: 'GET' as const,
+      path: '/api/projects/:id/energy-report',
+      responses: {
+        200: z.object({
+          currentPower: z.number(),
+          todayEnergy: z.number(),
+          last7DaysEnergy: z.number(),
+          monthToDateEnergy: z.number(),
+          lifetimeEnergy: z.number(),
+        }),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+  },
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {

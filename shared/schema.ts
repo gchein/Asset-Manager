@@ -45,6 +45,8 @@ export const projects = pgTable("projects", {
   zipCode: text("zip_code").notNull(),
   utility: text("utility"),
   companyId: integer("company_id").references(() => companies.id).notNull(), // The company that owns/created the project
+  inverterProviderId: integer("inverter_provider_id").references(() => inverterProviders.id),
+  siteId: text("site_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -111,6 +113,13 @@ export const ppaDocuments = pgTable("ppa_documents", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const inverterProviders = pgTable("inverter_providers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
   profiles: many(profiles),
@@ -135,6 +144,10 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   jobs: many(jobs),
   ppaDocuments: many(ppaDocuments),
+  inverterProvider: one(inverterProviders, {
+    fields: [projects.inverterProviderId],
+    references: [inverterProviders.id],
+  }),
 }));
 
 export const ppaDocumentsRelations = relations(ppaDocuments, ({ one }) => ({
@@ -142,6 +155,10 @@ export const ppaDocumentsRelations = relations(ppaDocuments, ({ one }) => ({
     fields: [ppaDocuments.projectId],
     references: [projects.id],
   }),
+}));
+
+export const inverterProvidersRelations = relations(inverterProviders, ({ many }) => ({
+  projects: many(projects),
 }));
 
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
@@ -179,6 +196,7 @@ export const insertMessageSchema = createInsertSchema(messages).omit({ id: true,
 export const insertWarrantySchema = createInsertSchema(warranties).omit({ id: true, createdAt: true });
 export const insertCommissionItemSchema = createInsertSchema(commissionItems).omit({ id: true, createdAt: true });
 export const insertPpaDocumentSchema = createInsertSchema(ppaDocuments).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInverterProviderSchema = createInsertSchema(inverterProviders).omit({ id: true, createdAt: true });
 
 // Types
 export type Company = typeof companies.$inferSelect;
@@ -190,6 +208,7 @@ export type JobHistory = typeof jobHistory.$inferSelect;
 export type Warranty = typeof warranties.$inferSelect;
 export type CommissionItem = typeof commissionItems.$inferSelect;
 export type PpaDocument = typeof ppaDocuments.$inferSelect;
+export type InverterProvider = typeof inverterProviders.$inferSelect;
 
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
@@ -199,6 +218,7 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertWarranty = z.infer<typeof insertWarrantySchema>;
 export type InsertCommissionItem = z.infer<typeof insertCommissionItemSchema>;
 export type InsertPpaDocument = z.infer<typeof insertPpaDocumentSchema>;
+export type InsertInverterProvider = z.infer<typeof insertInverterProviderSchema>;
 
 // Detailed Types for API
 export type ProjectWithJobs = Project & { jobs: Job[] };

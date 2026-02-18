@@ -1,9 +1,9 @@
 import {
-  users, companies, profiles, projects, jobs, messages, jobHistory, warranties, commissionItems, ppaDocuments,
+  users, companies, profiles, projects, jobs, messages, jobHistory, warranties, commissionItems, ppaDocuments, inverterProviders,
   type User, type InsertUser, type Company, type InsertCompany, type Profile, type InsertProfile,
   type Project, type InsertProject, type Job, type InsertJob, type Message, type InsertMessage,
   type JobHistory, type Warranty, type InsertWarranty, type CommissionItem, type InsertCommissionItem,
-  type PpaDocument, type InsertPpaDocument,
+  type PpaDocument, type InsertPpaDocument, type InverterProvider, type InsertInverterProvider,
   type ProjectWithJobs
 } from "@shared/schema";
 import { db } from "./db";
@@ -56,6 +56,11 @@ export interface IStorage {
   getPpaDocument(id: number): Promise<PpaDocument | undefined>;
   getPpaDocumentsByProject(projectId: number): Promise<PpaDocument[]>;
   updatePpaDocumentStatus(id: number, status: string): Promise<PpaDocument>;
+
+  // Inverter Providers
+  getInverterProvider(id: number): Promise<InverterProvider | undefined>;
+  getInverterProviders(): Promise<InverterProvider[]>;
+  createInverterProvider(provider: InsertInverterProvider): Promise<InverterProvider>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -282,6 +287,21 @@ export class DatabaseStorage implements IStorage {
   async updatePpaDocumentStatus(id: number, status: string): Promise<PpaDocument> {
     const [updated] = await db.update(ppaDocuments).set({ status, updatedAt: new Date() }).where(eq(ppaDocuments.id, id)).returning();
     return updated;
+  }
+
+  // Inverter Providers
+  async getInverterProvider(id: number): Promise<InverterProvider | undefined> {
+    const [provider] = await db.select().from(inverterProviders).where(eq(inverterProviders.id, id));
+    return provider;
+  }
+
+  async getInverterProviders(): Promise<InverterProvider[]> {
+    return await db.select().from(inverterProviders);
+  }
+
+  async createInverterProvider(provider: InsertInverterProvider): Promise<InverterProvider> {
+    const [newProvider] = await db.insert(inverterProviders).values(provider).returning();
+    return newProvider;
   }
 }
 

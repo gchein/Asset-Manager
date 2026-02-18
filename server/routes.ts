@@ -5,6 +5,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { sendContract, getEnvelopeStatus, downloadDocument } from "./services/docusign";
+import { getInverterProvider } from "./services/inverters";
 import { db } from "./db";
 import { users, profiles } from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -408,6 +409,31 @@ export async function registerRoutes(
     }
   });
 
+  // === Energy Report ===
+  app.get(api.energyReport.get.path, isAuthenticated, async (req, res) => {
+    try {
+      const project = await storage.getProject(Number(req.params.id));
+      if (!project) return res.status(404).json({ message: "Project not found" });
+
+      if (!project.inverterProviderId || !project.siteId) {
+        return res.status(400).json({ message: "Project has no inverter provider configured" });
+      }
+
+      const providerRecord = await storage.getInverterProvider(project.inverterProviderId);
+      if (!providerRecord) {
+        return res.status(400).json({ message: "Inverter provider not found" });
+      }
+
+      const provider = getInverterProvider(providerRecord.slug);
+      const report = await provider.getEnergyReport(project.siteId);
+
+      res.json(report);
+    } catch (err: any) {
+      console.error("Energy report error:", err);
+      res.status(500).json({ message: err.message || "Failed to fetch energy report" });
+    }
+  });
+
   // Seed data function (simple check if companies exist)
   seedDatabase();
 
@@ -424,6 +450,12 @@ async function seedDatabase() {
     const installerCompany = await storage.createCompany({ name: "Sunny Installers Inc", type: "installer" });
     const rooferCompany = await storage.createCompany({ name: "Top Roofing LLC", type: "roofer" });
     const engCompany = await storage.createCompany({ name: "Precision Engineering", type: "engineer" });
+
+    // Create Inverter Providers
+    await storage.createInverterProvider({
+      name: "SolarEdge",
+      slug: "solaredge"
+    });
 
     // Note: We can't easily seed users because of Replit Auth's UUIDs and external auth flow.
     // Users will be created upon login.
