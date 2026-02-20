@@ -43,15 +43,15 @@ export function Sidebar() {
     <>
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/25 group-data-[collapsible=icon]:hidden">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/20 shadow-lg shadow-black/10 group-data-[collapsible=icon]:hidden">
             <span className="text-white font-bold text-sm">S</span>
           </div>
           <div className="flex flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
             <div className="flex flex-col min-w-0">
-              <span className="font-display font-bold text-base leading-none truncate">
+              <span className="font-display font-bold text-base leading-none truncate text-white">
                 SolarOps
               </span>
-              <span className="text-xs text-sidebar-foreground/60 truncate">
+              <span className="text-xs text-white/70 truncate">
                 Enterprise Platform
               </span>
             </div>
@@ -73,11 +73,11 @@ export function Sidebar() {
                   alt="Profile"
                   className="h-8 w-8 shrink-0 rounded-full border-2 border-sidebar-ring/20 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:h-full group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:rounded-none object-cover"
                 />
-                <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden text-white">
                   <p className="font-medium text-sm truncate">
                     {user.firstName} {user.lastName}
                   </p>
-                  <p className="text-xs text-sidebar-foreground/60 truncate capitalize">
+                  <p className="text-xs text-white/70 truncate capitalize">
                     {profile?.role || "No Role"}
                   </p>
                 </div>
