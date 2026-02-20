@@ -27,7 +27,7 @@ export default function ProjectsList() {
         description="Manage customer sites and installations."
         action={
           <CreateProjectDialog open={open} onOpenChange={setOpen}>
-            <Button size="lg" className="shadow-lg shadow-primary/20">
+            <Button size="lg" className="shadow-lg bg-sidebar-background hover:bg-sidebar-background/90 text-sidebar-foreground border-none">
               <Plus className="mr-2 h-5 w-5" />
               New Project
             </Button>
