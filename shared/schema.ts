@@ -12,12 +12,12 @@ export const userRoleEnum = pgEnum("user_role", ["installer", "roofer", "ops", "
 export const companyTypeEnum = pgEnum("company_type", ["installer", "roofer", "ops", "engineer"]);
 export const jobTypeEnum = pgEnum("job_type", ["engineering", "r_and_r"]);
 export const jobStatusEnum = pgEnum("job_status", [
-  "new", 
-  "submitted", 
-  "assigned", 
-  "in_progress", 
-  "needs_revision", 
-  "completed", 
+  "new",
+  "submitted",
+  "assigned",
+  "in_progress",
+  "needs_revision",
+  "completed",
   "cancelled"
 ]);
 
@@ -53,13 +53,13 @@ export const jobs = pgTable("jobs", {
   projectId: integer("project_id").references(() => projects.id).notNull(),
   type: jobTypeEnum("type").notNull(),
   status: jobStatusEnum("status").default("new").notNull(),
-  
+
   // Assignments
   assignedEngineerId: text("assigned_engineer_id").references(() => users.id),
 
   // Flexible data storage for survey forms, specific job details
-  details: jsonb("details").$type<Record<string, any>>().default({}), 
-  
+  details: jsonb("details").$type<Record<string, any>>().default({}),
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -88,15 +88,6 @@ export const warranties = pgTable("warranties", {
   issueDate: timestamp("issue_date").notNull(),
   term: text("term").notNull(), // e.g., "10 years"
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const commissionItems = pgTable("commission_items", {
-  id: serial("id").primaryKey(),
-  jobId: integer("job_id").references(() => jobs.id).notNull(),
-  description: text("description").notNull(),
-  amount: integer("amount").notNull(), // stored in cents
-  isCommissionable: boolean("is_commissionable").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -156,7 +147,6 @@ export const jobsRelations = relations(jobs, ({ one, many }) => ({
   messages: many(messages),
   history: many(jobHistory),
   warranties: many(warranties),
-  commissionItems: many(commissionItems),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -177,7 +167,6 @@ export const insertProjectSchema = createInsertSchema(projects).omit({ id: true,
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertWarrantySchema = createInsertSchema(warranties).omit({ id: true, createdAt: true });
-export const insertCommissionItemSchema = createInsertSchema(commissionItems).omit({ id: true, createdAt: true });
 export const insertPpaDocumentSchema = createInsertSchema(ppaDocuments).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
@@ -188,7 +177,6 @@ export type Job = typeof jobs.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type JobHistory = typeof jobHistory.$inferSelect;
 export type Warranty = typeof warranties.$inferSelect;
-export type CommissionItem = typeof commissionItems.$inferSelect;
 export type PpaDocument = typeof ppaDocuments.$inferSelect;
 
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
@@ -197,12 +185,11 @@ export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertWarranty = z.infer<typeof insertWarrantySchema>;
-export type InsertCommissionItem = z.infer<typeof insertCommissionItemSchema>;
 export type InsertPpaDocument = z.infer<typeof insertPpaDocumentSchema>;
 
 // Detailed Types for API
 export type ProjectWithJobs = Project & { jobs: Job[] };
-export type JobWithDetails = Job & { 
-  project: Project; 
+export type JobWithDetails = Job & {
+  project: Project;
   assignedEngineer?: { id: string, firstName: string | null, lastName: string | null };
 };
