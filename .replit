@@ -39,5 +39,32 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 3000
 
+[[workflows.workflow]]
+name = "Pull Changes From GitHub"
+mode = "sequential"
+author = 53882880
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gh auth setup-git && git pull"
+
+[[workflows.workflow]]
+name = "Push Changes To GitHub AND Create PR"
+mode = "sequential"
+author = 53882880
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gh auth setup-git && git push -u origin HEAD && gh pr create --base main --fill --web"
+
+[[workflows.workflow]]
+name = "Push Changes Only"
+mode = "sequential"
+author = 53882880
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gh auth setup-git && git push -u origin HEAD"
+
 [agent]
 integrations = ["javascript_log_in_with_replit:2.0.0"]
