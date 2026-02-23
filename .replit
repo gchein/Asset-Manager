@@ -46,7 +46,7 @@ author = 53882880
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "git pull"
+args = "gh auth setup-git && git pull"
 
 [[workflows.workflow]]
 name = "Push Changes To GitHub AND Create PR"
@@ -55,7 +55,7 @@ author = 53882880
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "git push -u origin HEAD && gh pr create --base main --fill --web"
+args = "gh auth setup-git && git push -u origin HEAD && gh pr create --base main --fill --web"
 
 [[workflows.workflow]]
 name = "Push Changes Only"
@@ -64,7 +64,7 @@ author = 53882880
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "git push -u origin HEAD"
+args = "gh auth setup-git && git push -u origin HEAD"
 
 [agent]
 integrations = ["javascript_log_in_with_replit:2.0.0"]
