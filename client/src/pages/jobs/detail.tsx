@@ -182,7 +182,9 @@ export default function JobDetail() {
               </Select>
             </div>
           )}
-          <Button variant="outline">View Project</Button>
+          <Link href={`/projects/${job.projectId}`}>
+            <Button variant="outline">View Project</Button>
+          </Link>
         </div>
       </div>
 
