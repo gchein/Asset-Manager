@@ -1,4 +1,4 @@
-import { useRoute } from "wouter";
+import { useRoute, Link } from "wouter";
 import { useJob, useUpdateJob, useMessages, useCreateMessage, useEngineers, useMyProfile } from "@/hooks/use-data";
 import { PageHeader } from "@/components/layout/Shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -182,7 +182,9 @@ export default function JobDetail() {
               </Select>
             </div>
           )}
-          <Button variant="outline">View Project</Button>
+          <Link href={`/projects/${job.projectId}`}>
+            <Button variant="outline">View Project</Button>
+          </Link>
         </div>
       </div>
 
